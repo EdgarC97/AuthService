@@ -1,0 +1,23 @@
+﻿version: '3.8'
+services:
+  authservice:
+    build: .
+    ports:
+      - "5000:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - DB_CONNECTION=Server=sqlserver;Database=AuthDb;User Id=sa;Password=YourStrong!Passw0rd;
+      - JWT_SECRET=UnaClaveMuySecreta_Produccion456!
+      - JWT_EXPIRATION=120
+      - JWT_ISSUER=AuthServiceProd
+      - JWT_AUDIENCE=AuthServiceUsersProd
+    depends_on:
+      - sqlserver
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      SA_PASSWORD: "YourStrong!Passw0rd"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
