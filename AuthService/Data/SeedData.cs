@@ -25,7 +25,7 @@ namespace AuthService.Data
                     {
                         Username = "admin",
                         Email = "admin@example.com",
-                        PasswordHash = "adminhashed", // In a real scenario, hash the password
+                        PasswordHash = "adminhashed", 
                         FirstName = "Admin",
                         LastName = "User",
                         CreatedAt = DateTime.UtcNow
