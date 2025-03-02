@@ -37,7 +37,7 @@ The project is structured into several layers to ensure clear separation of conc
   Contains the full blueprint for a User (including properties like Username, Email, FirstName, LastName, etc.).
   
 - **DTOs:**  
-  Contains Data Transfer Objects (CreateUserDto, UpdateUserDto, UserDto) used to exchange data with clients in a simplified manner.
+  Contains Data Transfer Objects (e.g., CreateUserDto, UpdateUserDto, UserDto, RegisterRequest, LoginRequest) used to exchange data with clients in a simplified manner.
   
 - **AutoMapper:**  
   The MappingProfile translates between entities and DTOs to ensure that the service layer can work with the correct data format.
@@ -194,13 +194,46 @@ The service will start and listen on a URL (e.g., `http://localhost:5147`). Swag
 
 ## Testing
 
-This project is designed for unit testing. With controllers separated, you can write tests for each controller independently by mocking the corresponding service interfaces.
+The project is designed with testability in mind using xUnit. Unit tests are provided for controllers and services, and you can write additional tests following these guidelines.
 
-- **Unit Tests:**  
-  Write tests using your preferred test framework (e.g., NUnit, xUnit, or MSTest).
+### Setting Up the Test Project
 
-- **Integration Tests:**  
-  Consider using an in-memory database (e.g., InMemory provider for EF Core) to test data access and service logic.
+1. **Create the Test Project:**  
+   If you haven’t already, add a new xUnit Test Project (e.g., `AuthService.Tests`) to your solution.
+
+2. **Add a Reference to the Main Project:**  
+   In the test project, add a project reference to `AuthService`:
+   ```bash
+   dotnet add reference ../AuthService/AuthService.csproj
+   ```
+
+3. **Install Required NuGet Packages:**  
+   In the test project, install the following packages:
+   ```bash
+   dotnet add package Moq
+   dotnet add package Microsoft.NET.Test.Sdk
+   dotnet add package xunit
+   dotnet add package xunit.runner.visualstudio
+   ```
+
+### Writing Unit Tests
+
+- **Service Tests:**  
+  Use Moq to mock dependencies (such as repositories) and test business logic in your AuthService and UserService classes.
+
+- **Controller Tests:**  
+  Mock service interfaces (IAuthService, IUserService) to test your controllers.  
+  For example, an AuthController test might verify that a valid registration returns an OK result with a token, while invalid login returns an Unauthorized result.
+
+### Running the Tests
+
+Run the tests using the following command:
+
+```bash
+dotnet test
+```
+
+Or use the Test Explorer in Visual Studio to run and debug your tests.
 
 ---
 
@@ -233,4 +266,11 @@ Contributions are welcome! Please follow these guidelines:
 - Submit a pull request with a clear explanation of your changes.
 
 ---
-Happy coding!
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+By following this README, users will be able to set up, run, and test the AuthService microservice with ease. Happy coding!
