@@ -9,97 +9,114 @@ using Xunit;
 
 namespace AuthService.Tests
 {
-	public class AuthServiceTests
-	{
-		private readonly Mock<IUserRepository> _userRepositoryMock;
-		private readonly JwtSettings _jwtSettings;
-		private readonly AuthService.Services.AuthService _authService;
+    // Test class for AuthService
+    public class AuthServiceTests
+    {
+        // Mock for the IUserRepository dependency
+        private readonly Mock<IUserRepository> _userRepositoryMock;
+        // Sample JWT settings used for testing token generation
+        private readonly JwtSettings _jwtSettings;
+        // Instance of the AuthService under test
+        private readonly AuthService.Services.AuthService _authService;
 
-		public AuthServiceTests()
-		{
-			_userRepositoryMock = new Mock<IUserRepository>();
+        // Constructor initializes mocks and the service instance
+        public AuthServiceTests()
+        {
+            // Initialize the mock repository
+            _userRepositoryMock = new Mock<IUserRepository>();
 
-			// Setup sample JWT settings
-			_jwtSettings = new JwtSettings
-			{
-				Secret = "TestSecretKey1234567890",
-				ExpirationInMinutes = 60,
-				Issuer = "TestIssuer",
-				Audience = "TestAudience"
-			};
+            // Setup sample JWT settings with test values
+            _jwtSettings = new JwtSettings
+            {
+                Secret = "TestSecretKey1234567890",
+                ExpirationInMinutes = 60,
+                Issuer = "TestIssuer",
+                Audience = "TestAudience"
+            };
 
-			// Instantiate the service with mocks
-			_authService = new AuthService.Services.AuthService(_userRepositoryMock.Object, _jwtSettings);
-		}
+            // Instantiate the AuthService with the mock repository and test JWT settings
+            _authService = new AuthService.Services.AuthService(_userRepositoryMock.Object, _jwtSettings);
+        }
 
-		[Fact]
-		public async Task RegisterAsync_ShouldThrowException_WhenUserAlreadyExists()
-		{
-			// Arrange
-			var user = new User { Username = "existinguser", Email = "existing@example.com" };
-			_userRepositoryMock.Setup(repo => repo.GetByUsernameAsync("existinguser"))
-							   .ReturnsAsync(user);
+        // Test to ensure that registering an already existing user throws an exception.
+        [Fact]
+        public async Task RegisterAsync_ShouldThrowException_WhenUserAlreadyExists()
+        {
+            // Arrange: Create a user object representing an already existing user.
+            var user = new User { Username = "existinguser", Email = "existing@example.com" };
+            // Setup the repository mock to return the user when queried by username.
+            _userRepositoryMock.Setup(repo => repo.GetByUsernameAsync("existinguser"))
+                               .ReturnsAsync(user);
 
-			// Act & Assert
-			await Assert.ThrowsAsync<Exception>(() => _authService.RegisterAsync(user, "password"));
-		}
+            // Act & Assert: Verify that an exception is thrown when trying to register an existing user.
+            await Assert.ThrowsAsync<Exception>(() => _authService.RegisterAsync(user, "password"));
+        }
 
-		[Fact]
-		public async Task RegisterAsync_ShouldReturnToken_WhenUserIsNew()
-		{
-			// Arrange
-			var user = new User { Username = "newuser", Email = "new@example.com" };
-			_userRepositoryMock.Setup(repo => repo.GetByUsernameAsync("newuser"))
-							   .ReturnsAsync((User)null);
-			_userRepositoryMock.Setup(repo => repo.CreateAsync(It.IsAny<User>()))
-							   .Returns(Task.CompletedTask);
+        // Test to ensure that registering a new user returns a valid JWT token.
+        [Fact]
+        public async Task RegisterAsync_ShouldReturnToken_WhenUserIsNew()
+        {
+            // Arrange: Create a new user object.
+            var user = new User { Username = "newuser", Email = "new@example.com" };
+            // Setup the repository mock to return null, indicating the user does not exist.
+            _userRepositoryMock.Setup(repo => repo.GetByUsernameAsync("newuser"))
+                               .ReturnsAsync((User)null);
+            // Setup the repository mock to simulate user creation.
+            _userRepositoryMock.Setup(repo => repo.CreateAsync(It.IsAny<User>()))
+                               .Returns(Task.CompletedTask);
 
-			// Act
-			var token = await _authService.RegisterAsync(user, "password");
+            // Act: Call the RegisterAsync method to register the new user.
+            var token = await _authService.RegisterAsync(user, "password");
 
-			// Assert
-			Assert.False(string.IsNullOrWhiteSpace(token));
-		}
+            // Assert: Check that a non-empty token string is returned.
+            Assert.False(string.IsNullOrWhiteSpace(token));
+        }
 
-		[Fact]
-		public async Task AuthenticateAsync_ShouldReturnToken_WhenCredentialsAreValid()
-		{
-			// Arrange
-			string username = "testuser";
-			string password = "password";
-			var user = new User { Id = 1, Username = username, Email = "test@example.com" };
+        // Test to ensure that authentication returns a valid token when credentials are valid.
+        [Fact]
+        public async Task AuthenticateAsync_ShouldReturnToken_WhenCredentialsAreValid()
+        {
+            // Arrange: Define valid username and password.
+            string username = "testuser";
+            string password = "password";
+            // Create a user object with required properties.
+            var user = new User { Id = 1, Username = username, Email = "test@example.com" };
 
-			// Simulate stored hash from our ComputeSha256Hash method.
-			var sha256 = System.Security.Cryptography.SHA256.Create();
-			var bytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
-			user.PasswordHash = BitConverter.ToString(bytes).Replace("-", "").ToLower();
+            // Compute the SHA256 hash of the password to simulate a stored password hash.
+            var sha256 = System.Security.Cryptography.SHA256.Create();
+            var bytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+            user.PasswordHash = BitConverter.ToString(bytes).Replace("-", "").ToLower();
 
-			_userRepositoryMock.Setup(repo => repo.GetByUsernameAsync(username))
-							   .ReturnsAsync(user);
+            // Setup the repository mock to return the user when queried by username.
+            _userRepositoryMock.Setup(repo => repo.GetByUsernameAsync(username))
+                               .ReturnsAsync(user);
 
-			// Act
-			var token = await _authService.AuthenticateAsync(username, password);
+            // Act: Call the AuthenticateAsync method with valid credentials.
+            var token = await _authService.AuthenticateAsync(username, password);
 
-			// Assert
-			Assert.False(string.IsNullOrWhiteSpace(token));
-		}
+            // Assert: Verify that a non-empty token string is returned.
+            Assert.False(string.IsNullOrWhiteSpace(token));
+        }
 
-		[Fact]
-		public async Task AuthenticateAsync_ShouldReturnNull_WhenCredentialsAreInvalid()
-		{
-			// Arrange
-			string username = "testuser";
-			string password = "password";
-			var user = new User { Id = 1, Username = username, Email = "test@example.com", PasswordHash = "incorrecthash" };
+        // Test to ensure that authentication returns null when credentials are invalid.
+        [Fact]
+        public async Task AuthenticateAsync_ShouldReturnNull_WhenCredentialsAreInvalid()
+        {
+            // Arrange: Define username and password.
+            string username = "testuser";
+            string password = "password";
+            // Create a user object with an incorrect stored password hash.
+            var user = new User { Id = 1, Username = username, Email = "test@example.com", PasswordHash = "incorrecthash" };
 
-			_userRepositoryMock.Setup(repo => repo.GetByUsernameAsync(username))
-							   .ReturnsAsync(user);
+            // Setup the repository mock to return the user with the wrong password hash.
+            _userRepositoryMock.Setup(repo => repo.GetByUsernameAsync(username))
+                               .ReturnsAsync(user);
 
-			// Act
-			var token = await _authService.AuthenticateAsync(username, password);
+            // Act: Attempt to authenticate with valid credentials but mismatched hash.
+            var token = await _authService.AuthenticateAsync(username, password);
 
-			// Assert
-			Assert.Null(token);
-		}
-	}
+            // Assert: Verify that the authentication fails and returns null.
+            Assert.Null(token);
+        }
+    }
 }
